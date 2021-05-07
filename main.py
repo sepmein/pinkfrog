@@ -28,9 +28,6 @@ class TargetGroup(object):
 
     def add_state(self, state: Any) -> None:
         initiated = state.generator(self.n)
-        print(initiated)
-        initiated = tf.transpose(initiated)
-        print(initiated)
         self.state[state.name] = {
             "name": state.name,
             "index": self.state_len + 1,
@@ -51,7 +48,6 @@ class TargetGroup(object):
             transistor = state['transistor']
             self.tensor = transistor(self.tensor, tensor_slice_index)
 
-
 class State():
     def __init__(self,
                  name: str,
@@ -68,16 +64,19 @@ class Transistor():
 
     @staticmethod
     def add(number: int) -> Callable:
+
         def returned_add(tensor, tensor_slice_index):
-            data_width = tensor.shape
-            to_add_tensor = np.zeros(data_width)
-            to_add_tensor[tensor_slice_index] = number
-            result_tensor = tf.math.add(tensor, to_add_tensor)
-            print(result_tensor)
-            return result_tensor
+            dimension = len(tensor.shape)
+            if dimension == 1 :
+                return tensor + number
+            elif dimension == 2 :
+                data_width = tensor.shape[1]
+                to_add_tensor = np.zeros(data_width)
+                to_add_tensor[tensor_slice_index] = number
+                result_tensor = tf.math.add(tensor, to_add_tensor)
+                return result_tensor
 
         return returned_add
-
 
 class Generator():
     def __init__(self) -> None:
