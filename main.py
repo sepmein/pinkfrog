@@ -24,18 +24,19 @@ class TargetGroup(object):
         self.n = n
         self.tensor = None
         self.state = {}
-        self.state_len = len(self.state)
 
     def add_state(self, state: Any) -> None:
+        for key, value in self.state.items():
+            if state.name == key:
+                raise NameError('pf.add_state, state name:', state.name, ' has already in the group.')
         initiated = state.generator(self.n)
         self.state[state.name] = {
             "name": state.name,
-            "index": self.state_len + 1,
+            "index": len(self.state),
             "transistor": state.transistor
         }
-
         if self.tensor is not None:
-            tf.stack([self.tensor, initiated], axis=1)
+            self.tensor = tf.stack([self.tensor, initiated], axis=1)
         else:
             self.tensor = initiated
 
@@ -47,6 +48,7 @@ class TargetGroup(object):
             tensor_slice_index = state['index']
             transistor = state['transistor']
             self.tensor = transistor(self.tensor, tensor_slice_index)
+
 
 class State():
     def __init__(self,
@@ -67,9 +69,9 @@ class Transistor():
 
         def returned_add(tensor, tensor_slice_index):
             dimension = len(tensor.shape)
-            if dimension == 1 :
+            if dimension == 1:
                 return tensor + number
-            elif dimension == 2 :
+            elif dimension == 2:
                 data_width = tensor.shape[1]
                 to_add_tensor = np.zeros(data_width)
                 to_add_tensor[tensor_slice_index] = number
@@ -77,6 +79,7 @@ class Transistor():
                 return result_tensor
 
         return returned_add
+
 
 class Generator():
     def __init__(self) -> None:
