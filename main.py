@@ -6,6 +6,7 @@
 from typing import Any, Callable, List
 
 import tensorflow as tf
+from tensorflow.python.framework import indexed_slices
 from tensorflow.python.ops.array_ops import stack
 import tensorflow_probability as tfp
 import numpy as np
@@ -78,11 +79,20 @@ class State:
         self.generator = generator
 
 
-class Transistor:
-    def __init__(self) -> None:
-        pass
+class Transistor(tf.keras.layers.Layer):
+    def __init__(
+        self,
+        trainable=False,
+        name="Transistor",
+        dtype=tf.float32,
+        dynamic=False,
+        **kwargs
+    ):
+        super().__init__(
+            trainable=trainable, name=name, dtype=dtype, dynamic=dynamic, **kwargs
+        )
 
-    def __call__(self, *args: Any, **kwds: Any) -> Any:
+    def call(self, *args: Any, **kwds: Any) -> Any:
         pass
 
     @staticmethod
@@ -97,8 +107,10 @@ class Transistor:
         return layer_fn
 
     @staticmethod
-    def _get_slice(tensor, tensor_slice_index):
+    def _get_slice(*args):
+        tensor, tensor_slice_index = args
         dimension = len(tensor.shape)
+        print(dimension)
         if dimension == 1:
             return tensor
         elif dimension == 2:
@@ -106,7 +118,7 @@ class Transistor:
 
     @staticmethod
     def _update_tensor(tensor, tensor_slice_index, to_update_tensor):
-        dimension = len(tensor.shape)
+        dimension = tf.size(tensor.shape)
         if dimension == 1:
             # 1d updates
             indices = np.arange(tensor.shape[0])
@@ -114,7 +126,7 @@ class Transistor:
             return tf.tensor_scatter_nd_update(tensor, indices, to_update_tensor)
         elif dimension == 2:
             # row update
-            indices = tf.constant([[tensor_slice_index]])
+            indices = tf.constant([[tensor_slice_index.numpy()]])
             to_update_tensor = tf.reshape(to_update_tensor, [1, -1])
             return tf.tensor_scatter_nd_update(tensor, indices, to_update_tensor)
 
@@ -173,19 +185,60 @@ class Transistor:
         return return_bernoulli_flip
 
 
-class Suspectible_Infection_Proprotion_Calculator(Transistor):
+class Layer(Transistor):
     def __init__(self) -> None:
         super().__init__()
 
     def __call__(self, *args: Any, **kwds: Any) -> Any:
-        return super().__call__(*args, **kwds)
+        # get target tensor by slice index
+        target_tensor = super()._get_slice(args)
+        return target_tensor
 
-class Neural_Network_Probability_Distribution(Transistor):
-    def __init__(self) -> None:
-        super().__init__()
 
-    def __call__(self, *args: Any, **kwds: Any) -> Any:
-        return super().__call__(*args, **kwds)
+class Bernoulli_Flipper(Transistor):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def call(self, *args: Any, **kwds: Any) -> Any:
+        ## seems it's bug of keras, should use args[0] instead of args here
+        tensor, tensor_slice_index, probability = args[0]
+        target_tensor = super()._get_slice(tensor, tensor_slice_index)
+        target_tensor = tf.cast(target_tensor, dtype=tf.int32)
+        # generate sample
+        # using bernoulli distribution
+        tensor_size = tensor.shape
+        tensor_columns = tensor_size[1]
+        sample = tfp.distributions.Bernoulli(probs=probability, dtype=tf.int32).sample(
+            tensor_columns
+        )
+        # cal bitwise xor
+        to_update_tensor = tf.bitwise.bitwise_xor(target_tensor, sample)
+        to_update_tensor = tf.cast(to_update_tensor, tf.float32)
+        # update original tensor
+        updated_tensor = super()._update_tensor(
+            tensor, tensor_slice_index, to_update_tensor
+        )
+        return updated_tensor, tensor_slice_index
+
+
+class Susceptible_Infectious_Probability(Transistor):
+    def __init__(
+        self,
+        trainable=False,
+        name="SI_Model_Probability_Calculator",
+        dtype=tf.float32,
+        dynamic=False,
+        **kwargs
+    ):
+        super().__init__(trainable, name, dtype, dynamic, **kwargs)
+
+    def call(self, *args) -> Any:
+        target_tensor = super()._get_slice(*args)
+        S = tf.reduce_sum(target_tensor)
+        N = tf.size(target_tensor, out_type=tf.dtypes.float32)
+        I = N - S
+        result = I * (S / N)
+        return *args, result
 
 
 class Generator:
