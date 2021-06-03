@@ -58,7 +58,7 @@ class TargetGroup(object):
         index = []
         for name in name_list:
             if name in self.state:
-                index.push(self.state[name].index)
+                index.append(self.state[name].index)
             else:
                 raise Exception("Name not in state list")
         # get tensor by index
@@ -126,6 +126,10 @@ class Transistor(tf.keras.layers.Layer):
             return tf.tensor_scatter_nd_update(tensor, indices, to_update_tensor)
         elif dimension == 2:
             # row update
+            # if not a tensor, then transform it to a tensor
+            if not tf.is_tensor(tensor_slice_index):
+                tensor_slice_index = tf.convert_to_tensor(tensor_slice_index)
+
             indices = tf.constant([[tensor_slice_index.numpy()]])
             to_update_tensor = tf.reshape(to_update_tensor, [1, -1])
             return tf.tensor_scatter_nd_update(tensor, indices, to_update_tensor)

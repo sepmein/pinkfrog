@@ -74,6 +74,11 @@ def test_bernoulli_flip_with_sip():
     bernoulli_flip = pf.Bernoulli_Flipper()(sip)
     tensor, index = bernoulli_flip
 
+def test_init_transistor_without_call():
+    input = tf.keras.Input(shape=(32,))
+    sip = pf.Susceptible_Infectious_Probability()(input,1)
+    bernoulli_flip = pf.Bernoulli_Flipper()(sip)
+    print(bernoulli_flip)
 
 def test_si_model():
     SI = pf.TargetGroup(name="si", n=10)
@@ -83,9 +88,6 @@ def test_si_model():
         generator=tfp.distributions.NegativeBinomial(total_count=100, probs=0.4).sample,
     )
 
-    input = ""
-    transistor = pf.Suspectible_Infection_Proprotion_Calculator()(input)
-    transistor = pf.Bernoulli_Flipper()(transistor)
 
     input = pft.input("disease_susceptible")
 
