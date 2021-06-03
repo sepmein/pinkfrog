@@ -1,5 +1,5 @@
 from tensorflow.python.keras.backend import dtype
-import main as pf
+import pinkfrog as pf
 import tensorflow as tf
 import tensorflow_probability as tfp
 import pytest
