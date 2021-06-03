@@ -5,10 +5,8 @@
 
 from typing import Any, Callable
 
-import tensorflow as tf
-from tensorflow.python.ops.array_ops import stack
-import tensorflow_probability as tfp
 import numpy as np
+import tensorflow as tf
 
 
 class TargetGroup(object):
