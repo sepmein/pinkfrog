@@ -1,9 +1,12 @@
-from typing import Any
+from typing import Any, List
 import tensorflow as tf
+from pinkfrog.state import State
 
 
 class TargetGroup(object):
-    """Docstring for TargetGroup."""
+    """
+    Father class for a target group
+    """
 
     def __init__(self, name: str, n: int) -> None:
         """TODO: to be defined.
@@ -14,7 +17,7 @@ class TargetGroup(object):
         self.tensor = None
         self.state = {}
 
-    def add_state(self, state: Any) -> None:
+    def add_state(self, state: State) -> None:
         for key, value in self.state.items():
             if state.name == key:
                 raise NameError(
@@ -25,7 +28,7 @@ class TargetGroup(object):
         initiated = state.generator(self.n)
         self.state[state.name] = {
             "index": len(self.state),
-            "transistor": state.transistor,
+            "layer": state.transistor,
         }
         if self.tensor is not None:
             self.tensor = tf.stack([self.tensor, initiated])
@@ -38,7 +41,7 @@ class TargetGroup(object):
     def next(self) -> None:
         for key, state in self.state.items():
             tensor_slice_index = state["index"]
-            transistor = state["transistor"]
+            transistor = state["layer"]
             self.tensor = transistor(self.tensor, tensor_slice_index)
 
     def _get_index_by_name_(self, name_list: List):

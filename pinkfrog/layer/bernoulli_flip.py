@@ -1,10 +1,10 @@
 from typing import Any
-from pinkfrog.transistor import Transistor
+from pinkfrog.layer import Layer
 import tensorflow as tf
 import tensorflow_probability as tfp
 
 
-class Bernoulli_Flipper(Transistor):
+class BernoulliFlip(Layer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
