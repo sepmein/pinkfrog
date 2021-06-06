@@ -29,7 +29,7 @@ class SI:
 
         transistor = Transistor()
 
-        count_susceptible = Count('Susceptible')
+        count_susceptible = Count()
         transistor.add(count_susceptible)
 
         contact_rate = 4
@@ -37,21 +37,16 @@ class SI:
         transistor.add(contact)
 
         infect_rate = 0.5
-        infected = Multiply(infect_rate)
+        infected = Multiply(infect_rate * 1.0 / n)
         transistor.add(infected)
-
-        infect_rate = Multiply(1.0 / n)
-        transistor.add(infect_rate)
 
         bernoulli_flip = BernoulliFlip()
         transistor.add(bernoulli_flip)
 
-        transistor.add(count_susceptible)
-
         susceptible_state = State(
             name='Susceptible',
             transistor=transistor,
-            generator=Ones()
+            generator=Ones(rate=0.01)
         )
         self.target_group.add_state(susceptible_state)
-        pass
+
