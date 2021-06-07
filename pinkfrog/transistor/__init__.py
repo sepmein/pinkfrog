@@ -18,9 +18,9 @@ class Transistor:
         next_layer = None
         for layer in self.transistor:
             if next_layer is None:
-                next_layer = layer(args, kwargs)
+                next_layer = layer(*args, **kwargs)
             else:
-                next_layer = layer(next_layer)
+                next_layer = layer(*next_layer)
 
         return next_layer
 

@@ -8,11 +8,11 @@ class Add(Layer):
 
     def __call__(self, *args, **kwargs):
         # get args
-        tensor, tensor_slice_index = args[0]
+        tensor, tensor_slice_index, related_index = args
         # get target tensor
         target_tensor = super()._get_slice(tensor, tensor_slice_index)
         # manipulate
         to_update_tensor = target_tensor + self.to_add
         # update
         updated_tensor = super()._update_tensor(tensor, tensor_slice_index, to_update_tensor)
-        return updated_tensor, tensor_slice_index
+        return updated_tensor, tensor_slice_index, related_index

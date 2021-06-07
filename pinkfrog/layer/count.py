@@ -9,9 +9,9 @@ class Count(Layer):
 
     def __call__(self, *args, **kwargs):
         # get args
-        tensor, tensor_slice_index = args[0]
+        tensor, tensor_slice_index, related_index = args
         # get target tensor
         target_tensor = super()._get_slice(tensor, tensor_slice_index)
         # manipulate
         result = math.count_nonzero(target_tensor)
-        return tensor, tensor_slice_index, result
+        return tensor, tensor_slice_index, related_index, result

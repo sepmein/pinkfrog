@@ -6,23 +6,28 @@ import tensorflow_probability as tfp
 import pinkfrog as pf
 import pinkfrog.layer
 
-pft = pinkfrog.transistor.Layer
-import pinkfrog.targetgroup.group_creator as target_group
+import pinkfrog.transistor as pft
+from pinkfrog.targetgroup import TargetGroup
+from pinkfrog.transistor import Transistor
 from pinkfrog.state import State
-from pinkfrog.layer import add
+from pinkfrog.layer import Add
+from pinkfrog.generator import Ones
+from pinkfrog.layer import BernoulliFlip
 
 
 def test_import():
-    Uganda = target_group(name="Uganda", n=1000)
+    Uganda = TargetGroup(name="Uganda", n=1000)
     assert Uganda.name == "Uganda"
     assert Uganda.n == 1000
 
 
 def test_add_state():
-    Uganda = target_group(name="Uganda", n=100)
+    Uganda = TargetGroup(name="Uganda", n=100)
+    transistor = Transistor()
+    transistor.add(Add(1))
     age = State(
         name="age",
-        transistor=pf.Transistor.add(number=1),
+        transistor=transistor,
         generator=tfp.distributions.NegativeBinomial(total_count=100, probs=0.4).sample,
     )
     Uganda.add_state(age)
@@ -31,15 +36,19 @@ def test_add_state():
 
 
 def test_add_two_state():
-    Uganda = target_group(name="Uganda", n=100)
+    Uganda = TargetGroup(name="Uganda", n=100)
+    transistor = Transistor()
+    transistor.add(Add(1))
     age = State(
         name="age",
-        transistor=pf.Transistor.add(number=1),
+        transistor=transistor,
         generator=tfp.distributions.NegativeBinomial(total_count=100, probs=0.4).sample,
     )
+    transistor_dummy = Transistor()
+    transistor.add(Add(100))
     dummy_state = State(
         name="dummy",
-        transistor=pf.Transistor.add(number=100),
+        transistor=transistor_dummy,
         generator=tfp.distributions.NegativeBinomial(total_count=100, probs=0.4).sample,
     )
     Uganda.add_state(age)
@@ -50,15 +59,19 @@ def test_add_two_state():
 
 
 def test_add_two_same_name_state():
-    Uganda = target_group(name="Uganda", n=100)
+    Uganda = TargetGroup(name="Uganda", n=100)
+    age_transistor = Transistor()
+    age_transistor.add(Add(1))
     age = State(
         name="age",
-        transistor=pf.Transistor.add(number=1),
+        transistor=age_transistor,
         generator=tfp.distributions.NegativeBinomial(total_count=100, probs=0.4).sample,
     )
+    dummy_transistor = Transistor()
+    dummy_transistor.add(Add(100))
     dummy_state = State(
         name="age",
-        transistor=pf.Transistor.add(number=100),
+        transistor=dummy_transistor,
         generator=tfp.distributions.NegativeBinomial(total_count=100, probs=0.4).sample,
     )
     with pytest.raises(NameError):
@@ -66,49 +79,58 @@ def test_add_two_same_name_state():
         Uganda.add_state(dummy_state)
 
 
-def test_sip():
-    sip = pf.Susceptible_Infectious_Probability()
-    to_test = tf.constant([1., 0.])
-    *arg, result = sip(to_test, 0)
-    assert (result.numpy() == 0.5)
-
-
-def test_bernoulli_flip_with_sip():
-    to_test = tfp.distributions.Bernoulli(probs=0.1, dtype=tf.float32).sample([2, 100])
-    sip = pf.Susceptible_Infectious_Probability()(to_test, 0)
-    bernoulli_flip = pf.Bernoulli_Flipper()(sip)
-    tensor, index = bernoulli_flip
-
-
-def test_init_transistor_without_call():
-    input = tf.keras.Input(shape=(32,))
-    sip = pf.Susceptible_Infectious_Probability()(input, 1)
-    bernoulli_flip = pf.Bernoulli_Flipper()(sip)
-    print(bernoulli_flip)
+#
+# def test_sip():
+#     sip = pf.Susceptible_Infectious_Probability()
+#     to_test = tf.constant([1., 0.])
+#     *arg, result = sip(to_test, 0)
+#     assert (result.numpy() == 0.5)
+#
+#
+# def test_bernoulli_flip_with_sip():
+#     to_test = tfp.distributions.Bernoulli(probs=0.1, dtype=tf.float32).sample([2, 100])
+#     sip = pf.Susceptible_Infectious_Probability()(to_test, 0)
+#     bernoulli_flip = pf.Bernoulli_Flipper()(sip)
+#     tensor, index = bernoulli_flip
+#
+#
+# def test_init_transistor_without_call():
+#     input = tf.keras.Input(shape=(32,))
+#     sip = pf.Susceptible_Infectious_Probability()(input, 1)
+#     bernoulli_flip = pf.Bernoulli_Flipper()(sip)
+#     print(bernoulli_flip)
 
 
 def test_si_model():
-    SI = target_group(name="si", n=10)
+    SI = TargetGroup(name="si", n=10000)
+    transistor = Transistor()
+    transistor.add(pf.layer.Add(1))
     age = State(
         name="age",
-        transistor=pf.Transistor.add(number=1),
+        transistor=transistor,
         generator=tfp.distributions.NegativeBinomial(total_count=100, probs=0.4).sample,
     )
-
-    input = pft.input("disease_susceptible")
 
     # transitor
     # input(what layer should know about the tensor): 'disease_susceptible'
     # fn: calculate_si_percentage, bernoulli_flip
+    disease_state_transistor = Transistor()
+    disease_state_transistor\
+        .add(pf.layer.Count())\
+        .add(pf.layer.Multiply(4 / 100 * 0.5))\
+        .add(BernoulliFlip())
     disease_suspectible = State(
-        name="disease_susceptible", transistor=transistor, generator=pf.Generator.ones()
+        name="disease_susceptible",
+        transistor=disease_state_transistor,
+        generator=pf.generator.Ones(rate=0.01)
     )
+
+    # add state
+    SI.add_state(age)
     SI.add_state(disease_suspectible)
-    comparison = SI.tensor.numpy() == np.ones(10)
-    assert comparison.all()
 
     # add another state
-    SI.add_state(age)
+    assert len(SI.state) == 2
     print(SI.tensor)
     SI.next()
     print(SI.tensor)
@@ -121,7 +143,7 @@ def test_si_model():
 
 
 def test_add_multiple_correlated_state():
-    dummy = target_group(name="dummy", n=100)
+    dummy = TargetGroup(name="dummy", n=100)
 
     def transistor_fn():
         def return_fn(tensor, self_state_index, related_tensor_index_list):

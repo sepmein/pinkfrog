@@ -1,4 +1,4 @@
-from typing import  List
+from typing import List
 from pinkfrog.transistor import Transistor
 from pinkfrog.generator import Generator
 
@@ -11,7 +11,9 @@ class State:
             generator: Generator,
             related_state: List = None,
     ) -> None:
+        if related_state is None:
+            related_state = []
         self.name = name
-        self.related_state = related_state
         self.transistor = transistor
         self.generator = generator
+        self.related_state = related_state

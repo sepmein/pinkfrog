@@ -29,6 +29,7 @@ class TargetGroup(object):
         self.state[state.name] = {
             "index": len(self.state),
             "layer": state.transistor,
+            "related": state.related_state
         }
         if self.tensor is not None:
             self.tensor = tf.stack([self.tensor, initiated])
@@ -42,14 +43,15 @@ class TargetGroup(object):
         for key, state in self.state.items():
             tensor_slice_index = state["index"]
             transistor = state["layer"]
-            self.tensor = transistor(self.tensor, tensor_slice_index)
+            related_index = self._get_index_by_name_(state["related"])
+            self.tensor = transistor(self.tensor, tensor_slice_index, related_index)
 
     def _get_index_by_name_(self, name_list: List):
         # get index
         index = []
         for name in name_list:
             if name in self.state:
-                index.push(self.state[name].index)
+                index.append(self.state[name].index)
             else:
                 raise Exception("Name not in state list")
         # get tensor by index
