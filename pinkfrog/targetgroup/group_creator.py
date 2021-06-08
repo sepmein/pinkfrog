@@ -44,7 +44,7 @@ class TargetGroup(object):
             tensor_slice_index = state["index"]
             transistor = state["layer"]
             related_index = self._get_index_by_name_(state["related"])
-            self.tensor = transistor(self.tensor, tensor_slice_index, related_index)
+            self.tensor, *other_args = transistor(self.tensor, tensor_slice_index, related_index)
 
     def _get_index_by_name_(self, name_list: List):
         # get index
